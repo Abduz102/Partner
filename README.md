@@ -32,12 +32,5 @@ Todo corre **en tu equipo** (sin Docker, sin suscripciones, sin nube). Se constr
 - Fuera de tus carpetas, programas ejecutables y comandos guardados (`pc → comandos`) **siempre piden permiso** (botón o “sí/no” por voz). Sin respuesta en 45 s = no.
 - Todo se guarda en `%APPDATA%\Companera` (memoria.db, config.json, notas). Nada sale de tu PC salvo la búsqueda web si la pides.
 
-## Rendimiento en tu equipo (i3 7ª gen, RX 580 8 GB, 12 GB RAM)
-- `qwen2.5:7b` (~4.7 GB) cabe en los 8 GB de la RX 580 vía Vulkan. Comprueba con `ollama ps` que dice GPU. Si usa CPU o elige la gráfica integrada
-  del i3, define la variable de usuario `GGML_VK_VISIBLE_DEVICES` con el índice de la RX 580 (0 o 1) y reinicia Ollama.
-- Whisper corre en CPU (la RX 580 no sirve para él): `base` por defecto; `small` entiende mejor pero tarda más.
-- Si notas lentitud: activa **Modo ligero** (llama3.2). La memoria se extrae solo cuando llevas unos segundos sin hablar.
-- Sin altavoces con eco, marca “Uso auriculares” para interrumpirla con más facilidad.
-
 ## Versión Linux (para probar sin Windows)
 Aun no tenemos la version en linux, estamos trabajando en eso.
