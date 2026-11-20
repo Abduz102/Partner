@@ -1,8 +1,7 @@
 # Compañera local (Ollama + Whisper + Kokoro) — Windows 11 y Linux
 
 Compañera artificial con personalidad propia, voz, memoria persistente, avatar anime 2D y control del PC con permisos.
-Todo corre **en tu equipo** (sin Docker, sin suscripciones, sin nube). Se construye *sobre* Ollama: no hizo falta recompilar
-el código fuente que subiste (`ollama_tar.gz`); la personalidad va en un `Modelfile` y en el prompt dinámico.
+Todo corre **en tu equipo** (sin Docker, sin suscripciones, sin nube). Se construye *sobre* Ollama.
 
 ## Instalar (una vez)
 1. Descomprime esta carpeta en tu SSD.
@@ -40,27 +39,5 @@ el código fuente que subiste (`ollama_tar.gz`); la personalidad va en un `Model
 - Si notas lentitud: activa **Modo ligero** (llama3.2). La memoria se extrae solo cuando llevas unos segundos sin hablar.
 - Sin altavoces con eco, marca “Uso auriculares” para interrumpirla con más facilidad.
 
-## Límites honestos
-- No pude probar con tus modelos reales ni con micrófono/altavoces (mi entorno no tiene GPU, audio ni red): verifiqué la lógica con un Ollama simulado
-  (45 pruebas) y la interfaz en un navegador. La latencia real y la calidad de voz/reconocimiento dependen de tu equipo: ejecuta `diagnostico.bat`.
-- “Reconocer mi voz” = entender lo que dices. Distinguir *quién* habla (verificación de hablante) no está incluido.
-- La memoria busca por palabras (FTS5), no por significado; un paso futuro es añadir embeddings.
-- Un 7B a veces falla al usar herramientas; por eso solo se le ofrecen cuando tu frase lo sugiere y se le avisa si una acción no se realizó.
-
-## Pruebas
-`python -m unittest discover -s tests -t .` (necesita `playwright` solo para `test_ui.py`).
-
 ## Versión Linux (para probar sin Windows)
-```bash
-tar xzf companera-linux.tar.gz && cd companera
-./instalar.sh --ligero     # solo llama3.2 (~2 GB): la forma más rápida de probar
-# ./instalar.sh            # o completo: qwen2.5:7b + llama3.2
-./iniciar.sh               # abre la interfaz; ./iniciar.sh --texto para terminal
-```
-- La interfaz en Linux va en **modo navegador**: levanta un servidor solo en `127.0.0.1` (con token aleatorio) y abre una ventana tipo app con
-  Chromium/Chrome si están instalados, o tu navegador. Si prefieres otra, usa `./iniciar.sh --sin-abrir` y abre la URL que imprime. Ctrl+C la cierra y guarda la memoria.
-- Micrófono y altavoces los maneja Python (PortAudio), no el navegador: no se piden permisos de micrófono al navegador.
-- Voz: Kokoro si se descargó; si no, **espeak-ng** (robótica, solo para probar). Apps y carpetas se detectan solas (carpetas XDG: Documentos, Descargas…).
-- GPU en Linux: `ollama ps` debe decir GPU. En AMD antiguas como la RX 580 Ollama usa Vulkan (instala `mesa-vulkan-drivers`); ROCm no la soporta oficialmente.
-- Sin sesión gráfica (SSH): `./iniciar.sh --texto`.
-# Partner
+Aun no tenemos la version en linux, estamos trabajando en eso.

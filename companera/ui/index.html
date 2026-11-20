@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compañera</title>
+<style>
+:root{
+  --bg:#14121f; --bg2:#1c1930; --panel:rgba(255,255,255,.06); --line:rgba(255,255,255,.10);
+  --tx:#ece8ff; --tx2:#a9a3c9; --acc:#a78bfa; --acc2:#f0abfc; --ok:#5eead4; --warn:#fbbf24; --bad:#fb7185;
+  --user:#4c3f91; --ia:rgba(255,255,255,.08);
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#f6f3ff; --bg2:#ebe6fb; --panel:rgba(60,40,120,.06); --line:rgba(60,40,120,.14);
+    --tx:#241d44; --tx2:#6a6190; --acc:#7c5cd6; --acc2:#d946ef; --user:#7c5cd6; --ia:rgba(60,40,120,.08);
+  }
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:"Segoe UI Variable","Segoe UI",system-ui,sans-serif;color:var(--tx);
+  background:radial-gradient(120% 60% at 50% 0%,var(--bg2),var(--bg));display:flex;flex-direction:column;
+  padding-top:env(safe-area-inset-top,0px)}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+
+/* barra superior (arrastrable) */
+.top{display:flex;align-items:center;gap:8px;padding:8px 10px 0 14px;height:38px;flex:none}
+.top .pywebview-drag-region{flex:1;display:flex;align-items:center;gap:8px;height:100%;font-size:13px;font-weight:600;letter-spacing:.02em}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--tx2);transition:background .3s}
+.top .ib{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;color:var(--tx2)}
+.top .ib:hover{background:var(--panel);color:var(--tx)}
+.top .ib.on{color:var(--acc)}
+svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* escenario */
+.stage{flex:none;display:flex;flex-direction:column;align-items:center;padding:0 12px}
+.avatarwrap{position:relative;width:230px;height:262px}
+.glow{position:absolute;inset:16px 10px 22px;border-radius:50%;filter:blur(34px);opacity:.38;background:var(--acc);transition:background .4s,opacity .4s}
+body[data-estado="escuchando"] .glow{background:var(--ok);opacity:.30}
+body[data-estado="pensando"] .glow{background:var(--warn);animation:pulso 1.4s ease-in-out infinite}
+body[data-estado="hablando"] .glow{background:var(--acc2);animation:pulso 1s ease-in-out infinite}
+@keyframes pulso{50%{opacity:.6;transform:scale(1.05)}}
+#avatar{position:relative;width:100%;height:100%;overflow:visible}
+.nombre{font-size:15px;font-weight:650;margin-top:2px}
+.sub{font-size:12px;color:var(--tx2);min-height:16px}
+
+/* chat */
+.chat{flex:1;min-height:0;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:8px;
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 18px);mask-image:linear-gradient(to bottom,transparent 0,#000 18px);scrollbar-width:thin}
+.msg{max-width:86%;padding:8px 12px;border-radius:16px;font-size:14px;line-height:1.38;white-space:pre-wrap;word-wrap:break-word;animation:entra .25s ease-out}
+@keyframes entra{from{opacity:0;transform:translateY(6px)}}
+.msg.ia{align-self:flex-start;background:var(--ia);border-bottom-left-radius:5px}
+.msg.yo{align-self:flex-end;background:var(--user);color:#fff;border-bottom-right-radius:5px}
+.msg.ia.vivo::after{content:"";display:inline-block;width:6px;height:6px;margin-left:4px;border-radius:50%;background:var(--acc2);animation:pulso 1s infinite}
+.chip{align-self:center;font-size:11px;color:var(--tx2);background:var(--panel);border:1px solid var(--line);padding:3px 9px;border-radius:99px}
+
+/* controles */
+.ctl{flex:none;display:flex;align-items:center;justify-content:center;gap:12px;padding:6px 12px}
+.tg{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2);padding:6px 10px;border-radius:99px;border:1px solid var(--line)}
+.tg:hover{background:var(--panel)}
+.tg[aria-pressed="true"]{color:var(--tx);border-color:var(--acc);background:color-mix(in srgb,var(--acc) 18%,transparent)}
+.mic{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;box-shadow:0 6px 20px rgba(167,139,250,.35);transition:transform .15s}
+.mic:hover{transform:scale(1.05)}
+.mic[aria-pressed="true"]{background:linear-gradient(135deg,#fb7185,#f43f5e);animation:pulso 1.6s infinite}
+.mic svg.i{width:22px;height:22px}
+.entrada{flex:none;display:flex;gap:8px;padding:6px 12px 12px}
+.entrada input{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 14px;color:var(--tx);font:inherit;font-size:14px}
+.entrada input::placeholder{color:var(--tx2)}
+.enviar{width:42px;border-radius:14px;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center;color:var(--acc)}
+.enviar:hover{background:color-mix(in srgb,var(--acc) 20%,transparent)}
+
+/* capas */
+.capa{position:fixed;inset:0;background:rgba(10,8,20,.6);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:18px;z-index:10}
+.capa.abierta{display:flex}
+.caja{width:100%;max-width:360px;max-height:100%;overflow:auto;background:var(--bg2);border:1px solid var(--line);border-radius:18px;padding:16px}
+.caja h2{font-size:15px;margin-bottom:10px}
+.fila{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;font-size:13px;border-bottom:1px solid var(--line)}
+.fila input[type=text],.fila select,.fila input[type=number]{background:var(--panel);border:1px solid var(--line);color:var(--tx);border-radius:8px;padding:5px 8px;font:inherit;width:140px}
+.acciones{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.btn{padding:8px 14px;border-radius:10px;border:1px solid var(--line);font-size:13px}
+.btn.pri{background:var(--acc);color:#fff;border-color:transparent}
+.rec{font-size:12.5px;display:flex;gap:8px;justify-content:space-between;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--line)}
+.rec small{color:var(--tx2)}
+.rec button{color:var(--bad);font-size:12px}
+.toast{position:fixed;left:50%;bottom:76px;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--line);padding:8px 14px;border-radius:12px;font-size:12.5px;max-width:88%;opacity:0;pointer-events:none;transition:opacity .25s;z-index:20}
+.toast.on{opacity:1}
+
+/* avatar: animaciones suaves y baratas (solo transform/opacity) */
+#todo{transform-origin:50% 90%;animation:respira 4.2s ease-in-out infinite}
+@keyframes respira{50%{transform:translateY(-2px) scale(1.004)}}
+#peloAtras{transform-origin:50% 12%;animation:mece 5.5s ease-in-out infinite}
+@keyframes mece{50%{transform:rotate(.9deg)}}
+#cabeza{transform-origin:50% 100%;transition:transform .5s cubic-bezier(.3,.9,.3,1)}
+.ojo{transform-box:fill-box;transform-origin:center;transition:transform .09s}
+.ojo.cierra{transform:scaleY(.08)}
+#ceja-i,#ceja-d{transition:transform .35s;transform-box:fill-box;transform-origin:center}
+#rubor-i,#rubor-d{transition:opacity .4s}
+#lagrima,#sudor,#brillos,#signo{opacity:0;transition:opacity .35s}
+body.web #b-pin,body.web #b-min{display:none}
+body.reposo *{animation-play-state:paused!important}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body data-estado="inactiva">
+
+<div class="top">
+  <div class="pywebview-drag-region"><span class="dot" id="dot"></span><span id="titulo">Compañera</span></div>
+  <button class="ib" id="b-pin" title="Mantener encima de otras ventanas" aria-label="Mantener encima"><svg class="i" viewBox="0 0 24 24"><path d="M9 4h6l-1 6 3 3H7l3-3-1-6zM12 13v7"/></svg></button>
+  <button class="ib" id="b-aj" title="Ajustes y memoria" aria-label="Ajustes"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2-1.2L14 3h-4l-.6 2.7a7 7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 2 1.2L10 21h4l.6-2.7a7 7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg></button>
+  <button class="ib" id="b-min" title="Minimizar" aria-label="Minimizar"><svg class="i" viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+  <button class="ib" id="b-x" title="Cerrar" aria-label="Cerrar"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+</div>
+
+<div class="stage">
+  <div class="avatarwrap">
+    <div class="glow"></div>
+    <svg id="avatar" viewBox="0 0 300 340" role="img" aria-label="Avatar de la compañera">
+      <defs>
+        <linearGradient id="gPelo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a2f86"/><stop offset=".65" stop-color="#7a4fc4"/><stop offset="1" stop-color="#e08bd8"/></linearGradient>
+        <linearGradient id="gFlequillo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5a3a9c"/><stop offset="1" stop-color="#3d2670"/></linearGradient>
+        <linearGradient id="gIris" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6d5bff"/><stop offset=".55" stop-color="#47b5ff"/><stop offset="1" stop-color="#9af0ff"/></linearGradient>
+        <linearGradient id="gSudadera" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b3566"/><stop offset="1" stop-color="#27234a"/></linearGradient>
+        <radialGradient id="gPiel" cx=".5" cy=".4" r=".7"><stop offset="0" stop-color="#ffe9dc"/><stop offset="1" stop-color="#fbd3bf"/></radialGradient>
+        <clipPath id="clipOjoI"><ellipse cx="0" cy="0" rx="16.5" ry="21"/></clipPath>
+      </defs>
+
+      <g id="todo">
+        <g id="peloAtras">
+          <path d="M72 150C58 64 108 26 150 26s92 38 78 124c14 62 10 128-14 186H86C62 278 58 212 72 150Z" fill="url(#gPelo)"/>
+        </g>
+        <!-- cuerpo -->
+        <path d="M130 228h40l3 46c-12 10-34 10-46 0z" fill="#f4c9b3"/>
+        <path d="M44 348c2-56 44-86 106-86s104 30 106 86z" fill="url(#gSudadera)"/>
+        <path d="M118 266c10 22 54 22 64 0l-6-6c-14 10-38 10-52 0z" fill="#1f1b3b" opacity=".55"/>
+        <path d="M132 276c-2 18-4 34-6 52M168 276c2 18 4 34 6 52" stroke="#ece8ff" stroke-width="2.6" stroke-linecap="round" opacity=".85"/>
+        <circle cx="126" cy="330" r="3.2" fill="#ece8ff"/><circle cx="174" cy="330" r="3.2" fill="#ece8ff"/>
+
+        <g id="cabeza">
+          <!-- cara -->
+          <path d="M94 142c0-44 112-44 112 0 2 48-16 88-56 100-40-12-58-52-56-100z" fill="url(#gPiel)"/>
+          <ellipse id="rubor-i" cx="108" cy="204" rx="14" ry="7.5" fill="#ff8fa8" opacity=".5"/>
+          <ellipse id="rubor-d" cx="192" cy="204" rx="14" ry="7.5" fill="#ff8fa8" opacity=".5"/>
+
+          <!-- ojos -->
+          <g id="ojoI" transform="translate(118 176)">
+            <g class="ojo" id="ojoI-a">
+              <ellipse rx="17" ry="21.5" fill="#fff"/>
+              <g clip-path="url(#clipOjoI)">
+                <ellipse id="irisI" cx="0" cy="2" rx="13.5" ry="19" fill="url(#gIris)"/>
+                <ellipse id="pupI" cx="0" cy="3" rx="6.4" ry="10" fill="#1a1030"/>
+                <ellipse cx="0" cy="14" rx="9" ry="4" fill="#bff6ff" opacity=".55"/>
+              </g>
+              <circle cx="-5" cy="-7" r="4.8" fill="#fff"/><circle cx="5.5" cy="7" r="2.1" fill="#fff" opacity=".9"/>
+              <path d="M-19 -5Q0-30 19-5" fill="none" stroke="#2a1840" stroke-width="4.6" stroke-linecap="round"/>
+              <path d="M-19 -5l-5 -5M-15 -12l-5 -5" stroke="#2a1840" stroke-width="2.6" stroke-linecap="round"/>
+            </g>
+            <path class="feliz" d="M-17 5Q0-15 17 5" fill="none" stroke="#2a1840" stroke-width="4.4" stroke-linecap="round" style="display:none"/>
+          </g>
+          <g id="ojoD" transform="translate(182 176)">
+            <g class="ojo" id="ojoD-a">
+              <ellipse rx="17" ry="21.5" fill="#fff"/>
+              <g clip-path="url(#clipOjoI)">
+                <ellipse id="irisD" cx="0" cy="2" rx="13.5" ry="19" fill="url(#gIris)"/>
+                <ellipse id="pupD" cx="0" cy="3" rx="6.4" ry="10" fill="#1a1030"/>
+                <ellipse cx="0" cy="14" rx="9" ry="4" fill="#bff6ff" opacity=".55"/>
+              </g>
+              <circle cx="-5" cy="-7" r="4.8" fill="#fff"/><circle cx="5.5" cy="7" r="2.1" fill="#fff" opacity=".9"/>
+              <path d="M-19 -5Q0-30 19-5" fill="none" stroke="#2a1840" stroke-width="4.6" stroke-linecap="round"/>
+              <path d="M19 -5l5 -5M15 -12l5 -5" stroke="#2a1840" stroke-width="2.6" stroke-linecap="round"/>
+            </g>
+            <path class="feliz" d="M-17 5Q0-15 17 5" fill="none" stroke="#2a1840" stroke-width="4.4" stroke-linecap="round" style="display:none"/>
+          </g>
+
+          <!-- cejas, nariz, boca -->
+          <path id="ceja-i" d="M100 143Q117 135 136 141" fill="none" stroke="#4a2f86" stroke-width="3.6" stroke-linecap="round"/>
+          <path id="ceja-d" d="M164 141Q183 135 200 143" fill="none" stroke="#4a2f86" stroke-width="3.6" stroke-linecap="round"/>
+          <path d="M148 205q2 3 4 0" fill="none" stroke="#d9a58f" stroke-width="2" stroke-linecap="round"/>
+          <path id="boca" d="M138 217Q150 226 162 217" fill="none" stroke="#b5495f" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path id="lengua" d="" fill="#ff8a9e" opacity="0"/>
+          <path id="lagrima" d="M213 190q-6 11 0 16 6-5 0-16z" fill="#8fd3ff"/>
+          <path id="sudor" d="M214 128q-6 11 0 16 6-5 0-16z" fill="#8fd3ff"/>
+
+          <!-- flequillo y mechones -->
+          <path d="M90 156C82 92 120 62 150 62s68 30 60 94c-4-22-14-38-30-48-6 18-18 28-32 32-12-4-26-14-30-32-16 10-24 26-28 44z" fill="url(#gFlequillo)"/>
+          <path d="M116 110c4 14 10 22 20 28M184 110c-4 14-10 22-20 28" fill="none" stroke="#8a64d6" stroke-width="2.2" stroke-linecap="round" opacity=".55"/>
+          <path d="M92 150c-8 36-6 70 4 94 10-18 14-44 16-78z" fill="url(#gFlequillo)"/>
+          <path d="M208 150c8 36 6 70-4 94-10-18-14-44-16-78z" fill="url(#gFlequillo)"/>
+          <!-- horquilla -->
+          <g transform="translate(206 100) rotate(18)"><path d="M0-9l2.6 6.4 6.8.6-5.2 4.4 1.6 6.6L0 5l-5.8 4 1.6-6.6-5.2-4.4 6.8-.6z" fill="#ffd86b" stroke="#e8a93a" stroke-width="1"/></g>
+          <path id="brillos" d="M58 90l3 7 7 3-7 3-3 7-3-7-7-3 7-3zM248 70l2.4 5.6 5.6 2.4-5.6 2.4-2.4 5.6-2.4-5.6-5.6-2.4 5.6-2.4z" fill="#ffe9a8"/>
+          <text id="signo" x="236" y="128" font-size="34" font-weight="700" fill="#ffe9a8">?</text>
+        </g>
+      </g>
+    </svg>
+  </div>
+  <div class="nombre" id="nombre">Aiko</div>
+  <div class="sub" id="sub">&nbsp;</div>
+</div>
+
+<div class="chat" id="chat" aria-live="polite"></div>
+
+<div class="ctl">
+  <button class="tg" id="t-juego" aria-pressed="false" title="Modo juego: respuestas cortas y sin distraer"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="10" rx="4"/><path d="M8 11v4M6 13h4M16 12h.01M18 14h.01"/></svg>Juego</button>
+  <button class="mic" id="b-mic" aria-pressed="false" title="Hablar con ella (llamada)" aria-label="Llamada de voz"><svg class="i" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+  <button class="tg" id="t-dnd" aria-pressed="false" title="No molestar: no inicia conversaciones"><svg class="i" viewBox="0 0 24 24"><path d="M20 14A8 8 0 0 1 10 4a8 8 0 1 0 10 10z"/></svg>Silencio</button>
+</div>
+
+<form class="entrada" id="form" autocomplete="off">
+  <input id="txt" type="text" placeholder="Escríbeme algo…" aria-label="Mensaje">
+  <button class="enviar" type="submit" aria-label="Enviar"><svg class="i" viewBox="0 0 24 24"><path d="M5 12l14-7-5 15-3-6z"/></svg></button>
+</form>
+
+<div class="capa" id="cap-conf"><div class="caja"><h2>¿Me das permiso?</h2><p id="conf-txt" style="font-size:13.5px;line-height:1.4"></p>
+  <div class="acciones"><button class="btn" id="conf-no">No</button><button class="btn pri" id="conf-si">Sí, hazlo</button></div></div></div>
+
+<div class="capa" id="cap-aj"><div class="caja">
+  <h2>Ajustes</h2>
+  <div class="fila"><label for="a-nombre">Su nombre</label><input type="text" id="a-nombre"></div>
+  <div class="fila"><label for="a-usuario">Tu nombre</label><input type="text" id="a-usuario"></div>
+  <div class="fila"><label for="a-hablar">Responder en voz</label><input type="checkbox" id="a-hablar"></div>
+  <div class="fila"><label for="a-aur">Uso auriculares</label><input type="checkbox" id="a-aur"></div>
+  <div class="fila"><label for="a-lig">Modo ligero (más rápido)</label><input type="checkbox" id="a-lig"></div>
+  <div class="fila"><label for="a-ini">Que inicie conversaciones</label><input type="checkbox" id="a-ini"></div>
+  <div class="fila"><label for="a-stt">Reconocimiento de voz</label><select id="a-stt"><option>tiny</option><option>base</option><option>small</option></select></div>
+  <h2 style="margin-top:14px">Lo que recuerdo</h2>
+  <div id="recs"></div>
+  <div class="acciones"><button class="btn" id="aj-x">Cerrar</button><button class="btn pri" id="aj-ok">Guardar</button></div>
+</div></div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const API = () => (window.pywebview && window.pywebview.api) || null;
+const call = async (m, ...a) => { const api = API(); if (!api) return null; try { return await api[m](...a); } catch (e) { toast("Error: " + e); return null; } };
+
+/* ---------- avatar ---------- */
+const BOCAS = {
+  neutral:  "M139 217Q150 223 161 217",
+  feliz:    "M134 213Q150 232 166 213",
+  triste:   "M139 222Q150 212 161 222",
+  pensativa:"M141 218Q148 215 160 219",
+  sorprendida:"M145 214Q150 210 155 214Q157 227 150 227Q143 227 145 214Z",
+  traviesa: "M133 214Q141 224 150 215Q159 224 167 214",
+  seria:    "M141 219L159 219",
+  preocupada:"M139 222Q150 214 161 222",
+  avergonzada:"M138 219Q144 214 150 219Q156 224 162 219"
+};
+const ABIERTA = [
+  "M141 213Q150 211 159 213Q158 224 150 224Q142 224 141 213Z",
+  "M138 213Q150 209 162 213Q161 229 150 229Q139 229 138 213Z",
+  "M143 214Q150 212 157 214Q156 221 150 221Q144 221 143 214Z"
+];
+const EMO = {   // cejas (rotación,dy) izq/der, rubor, cabeza, ojos felices, extras
+  neutral:    {ci:[0,0], cd:[0,0], rubor:.45, cab:0},
+  feliz:      {ci:[-4,-2], cd:[4,-2], rubor:.8, cab:-2, ojosFelices:true, brillos:true},
+  triste:     {ci:[10,2], cd:[-10,2], rubor:.25, cab:3, lagrima:true},
+  pensativa:  {ci:[-6,-3], cd:[0,1], rubor:.4, cab:-5, signo:true},
+  sorprendida:{ci:[-6,-7], cd:[6,-7], rubor:.5, cab:0, grande:true},
+  traviesa:   {ci:[-8,-1], cd:[2,-3], rubor:.7, cab:4, brillos:true},
+  seria:      {ci:[6,1], cd:[-6,1], rubor:.2, cab:0},
+  preocupada: {ci:[10,-2], cd:[-10,-2], rubor:.3, cab:2, sudor:true},
+  avergonzada:{ci:[8,0], cd:[-8,0], rubor:1, cab:-3, sudor:true}
+};
+const S = { estado:"inactiva", emocion:"neutral", hablaHasta:0, ultimaBoca:0, bocaAbierta:false };
+
+function setEmocion(e){
+  if(!EMO[e]) e = "neutral";
+  S.emocion = e;
+  const x = EMO[e];
+  $("#ceja-i").style.transform = `translateY(${x.ci[1]}px) rotate(${x.ci[0]}deg)`;
+  $("#ceja-d").style.transform = `translateY(${x.cd[1]}px) rotate(${x.cd[0]}deg)`;
+  $("#rubor-i").style.opacity = $("#rubor-d").style.opacity = x.rubor;
+  $("#cabeza").style.transform = `rotate(${x.cab}deg)`;
+  for (const g of document.querySelectorAll(".feliz")) g.style.display = x.ojosFelices ? "block" : "none";
+  for (const g of document.querySelectorAll(".ojo")) g.style.display = x.ojosFelices ? "none" : "block";
+  for (const id of ["irisI","irisD"]) $("#"+id).setAttribute("ry", x.grande ? 20.5 : 19);
+  for (const id of ["pupI","pupD"]) $("#"+id).setAttribute("rx", x.grande ? 4.6 : 6.4);
+  $("#lagrima").style.opacity = x.lagrima ? 1 : 0;
+  $("#sudor").style.opacity = x.sudor ? 1 : 0;
+  $("#brillos").style.opacity = x.brillos ? 1 : 0;
+  $("#signo").style.opacity = x.signo ? 1 : 0;
+  pintaBoca(false);
+}
+function pintaBoca(abierta){
+  const b = $("#boca");
+  if(abierta){
+    b.setAttribute("d", ABIERTA[Math.floor(Math.random()*ABIERTA.length)]);
+    b.setAttribute("fill", "#b5495f");
+  } else {
+    b.setAttribute("d", BOCAS[S.emocion] || BOCAS.neutral);
+    b.setAttribute("fill", S.emocion === "sorprendida" ? "#b5495f" : "none");
+  }
+  S.bocaAbierta = abierta;
+}
+function setEstado(s){
+  S.estado = s;
+  document.body.dataset.estado = s;
+  const t = {inactiva:"", escuchando:"te escucho…", pensando:"pensando…", hablando:"hablando…"}[s] ?? "";
+  $("#sub").textContent = t || "\u00a0";
+  $("#dot").style.background = {escuchando:"var(--ok)", pensando:"var(--warn)", hablando:"var(--acc2)"}[s] || "var(--tx2)";
+  if (s === "hablando") S.hablaHasta = performance.now() + 1e9; else if (S.hablaHasta > 1e8) S.hablaHasta = 0;
+}
+function bucleBoca(t){
+  const habla = t < S.hablaHasta;
+  if (habla && t - S.ultimaBoca > 120){ S.ultimaBoca = t; pintaBoca(Math.random() > .28); }
+  else if (!habla && S.bocaAbierta) pintaBoca(false);
+  if(!document.body.classList.contains("reposo")) requestAnimationFrame(bucleBoca);
+}
+function parpadeo(){
+  if(!document.body.classList.contains("reposo")){
+    const ojos = document.querySelectorAll(".ojo");
+    ojos.forEach(o => o.classList.add("cierra"));
+    setTimeout(() => ojos.forEach(o => o.classList.remove("cierra")), 110);
+  }
+  setTimeout(parpadeo, 2400 + Math.random()*3600);
+}
+function mirada(){   // los ojos se mueven un poco para que se sienta viva
+  const dx = (Math.random()*4 - 2), dy = (Math.random()*2 - 1);
+  for (const id of ["irisI","pupI","irisD","pupD"]) $("#"+id).style.transform = `translate(${dx}px,${dy}px)`;
+  setTimeout(mirada, 1800 + Math.random()*3000);
+}
+document.addEventListener("visibilitychange", () => {
+  document.body.classList.toggle("reposo", document.hidden);
+  if(!document.hidden) requestAnimationFrame(bucleBoca);
+});
+
+/* ---------- chat ---------- */
+const chat = $("#chat");
+let vivo = null;
+function burbuja(cls, txt){
+  const d = document.createElement("div"); d.className = "msg " + cls; d.textContent = txt || "";
+  chat.appendChild(d); chat.scrollTop = chat.scrollHeight;
+  while (chat.children.length > 60) chat.removeChild(chat.firstChild);
+  return d;
+}
+function chipTxt(t){ const d = document.createElement("div"); d.className = "chip"; d.textContent = t; chat.appendChild(d); chat.scrollTop = chat.scrollHeight; }
+let tt; function toast(t){ const e = $("#toast"); e.textContent = t; e.classList.add("on"); clearTimeout(tt); tt = setTimeout(() => e.classList.remove("on"), 3800); }
+
+/* ---------- eventos desde Python ---------- */
+const ui = window.ui = {
+  evento(ev){
+    const v = ev.v;
+    switch (ev.t){
+      case "estado": setEstado(v); break;
+      case "emocion": setEmocion(v); break;
+      case "usuario": burbuja("yo", v); break;
+      case "ia_inicio": if (vivo) vivo.classList.remove("vivo"); vivo = burbuja("ia vivo", ""); break;
+      case "ia_delta":
+        if (!vivo) vivo = burbuja("ia vivo", "");
+        vivo.textContent += v; chat.scrollTop = chat.scrollHeight;
+        if (S.estado !== "hablando") S.hablaHasta = performance.now() + 350;
+        break;
+      case "ia_fin": if (vivo){ vivo.classList.remove("vivo"); if(!vivo.textContent.trim()) vivo.remove(); vivo = null; } break;
+      case "herramienta": chipTxt("⚙ " + v.nombre + ": " + v.resultado); break;
+      case "confirmar": $("#conf-txt").textContent = v; $("#cap-conf").classList.add("abierta"); $("#conf-si").focus(); break;
+      case "aviso": case "error": toast(v); break;
+      case "avisos": if (v && v.length) toast(v[0]); break;
+      case "interrumpida": if (vivo){ vivo.classList.remove("vivo"); vivo = null; } break;
+    }
+  }
+};
+
+/* ---------- acciones ---------- */
+$("#form").addEventListener("submit", e => {
+  e.preventDefault();
+  const t = $("#txt").value.trim(); if (!t) return;
+  $("#txt").value = "";
+  call("enviar", t);
+});
+$("#b-mic").addEventListener("click", async () => {
+  const ok = await call("alternar_llamada");
+  const b = $("#b-mic"); b.setAttribute("aria-pressed", ok ? "true" : "false");
+  if (ok) toast("Estoy escuchando. Háblame; puedes interrumpirme."); else if (S.estado !== "hablando") setEstado("inactiva");
+});
+$("#t-juego").addEventListener("click", async e => { const v = await call("alternar_juego"); e.currentTarget.setAttribute("aria-pressed", v ? "true" : "false"); });
+$("#t-dnd").addEventListener("click", async e => { const v = await call("alternar_dnd"); e.currentTarget.setAttribute("aria-pressed", v ? "true" : "false"); });
+$("#b-pin").addEventListener("click", async e => { const on = e.currentTarget.classList.toggle("on"); await call("siempre_visible", on); });
+$("#b-min").addEventListener("click", () => call("minimizar"));
+$("#b-x").addEventListener("click", () => call("cerrar"));
+$("#conf-si").addEventListener("click", () => { $("#cap-conf").classList.remove("abierta"); call("confirmar", true); });
+$("#conf-no").addEventListener("click", () => { $("#cap-conf").classList.remove("abierta"); call("confirmar", false); });
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape"){ $("#cap-aj").classList.remove("abierta"); if (S.estado === "hablando") call("interrumpir"); }
+});
+
+/* ajustes + memoria */
+async function abreAjustes(){
+  const a = await call("ajustes") || {};
+  $("#a-nombre").value = a.nombre ?? ""; $("#a-usuario").value = a.usuario ?? "";
+  $("#a-hablar").checked = !!a.hablar_respuestas; $("#a-aur").checked = !!a.auriculares;
+  $("#a-lig").checked = !!a.usar_ligero; $("#a-ini").checked = !!a.iniciativa; $("#a-stt").value = a.stt_modelo || "base";
+  const rs = await call("recuerdos") || [], box = $("#recs"); box.textContent = "";
+  if (!rs.length){ const p = document.createElement("p"); p.style.cssText = "font-size:12.5px;color:var(--tx2)"; p.textContent = "Todavía no guardo nada importante sobre ti. Cuéntame de tu vida."; box.appendChild(p); }
+  for (const r of rs){
+    const d = document.createElement("div"); d.className = "rec";
+    const t = document.createElement("div"); t.textContent = r.texto;
+    const s = document.createElement("small"); s.textContent = ` · ${r.tipo} · ${"★".repeat(r.importancia)}${r.fecha ? " · " + r.fecha : ""}`; t.appendChild(s);
+    const b = document.createElement("button"); b.textContent = "Olvidar"; b.onclick = async () => { await call("borrar_recuerdo", r.id); d.remove(); };
+    d.append(t, b); box.appendChild(d);
+  }
+  $("#cap-aj").classList.add("abierta");
+}
+$("#b-aj").addEventListener("click", abreAjustes);
+$("#aj-x").addEventListener("click", () => $("#cap-aj").classList.remove("abierta"));
+$("#aj-ok").addEventListener("click", async () => {
+  const a = await call("guardar_ajustes", {
+    nombre: $("#a-nombre").value.trim() || "Aiko", usuario: $("#a-usuario").value.trim(),
+    hablar_respuestas: $("#a-hablar").checked, auriculares: $("#a-aur").checked, usar_ligero: $("#a-lig").checked,
+    iniciativa: $("#a-ini").checked, stt_modelo: $("#a-stt").value });
+  if (a){ $("#nombre").textContent = $("#titulo").textContent = a.nombre; }
+  $("#cap-aj").classList.remove("abierta"); toast("Guardado");
+});
+
+/* ---------- arranque ---------- */
+async function iniciar(){
+  const s = await call("iniciar");
+  if (s){
+    $("#nombre").textContent = $("#titulo").textContent = s.nombre;
+    $("#t-juego").setAttribute("aria-pressed", s.juego ? "true" : "false");
+    $("#t-dnd").setAttribute("aria-pressed", s.dnd ? "true" : "false");
+    $("#b-mic").setAttribute("aria-pressed", s.llamada ? "true" : "false");
+    $("#b-pin").classList.add("on");
+    if (s.avisos && s.avisos.length) toast(s.avisos[0]);
+  }
+}
+setEmocion("neutral"); setEstado("inactiva");
+requestAnimationFrame(bucleBoca); setTimeout(parpadeo, 2000); setTimeout(mirada, 1500);
+if (API()) iniciar(); else window.addEventListener("pywebviewready", iniciar);
+</script>
+</body>
+</html>
